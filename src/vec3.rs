@@ -1,6 +1,5 @@
 use std::ops::*;
 
-
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3(pub f32, pub f32, pub f32);
 
@@ -70,18 +69,16 @@ impl Mul<Vec3> for Vec3 {
     }
 }
 
-// Vec3 <-> f32 ops
-
-impl Mul<f32> for Vec3 {
+impl Mul<Vec3> for f32 {
     type Output = Vec3;
-    fn mul(self, f: f32) -> Vec3 {
-        Vec3(self.0 * f, self.1 * f, self.2 * f)
+    fn mul(self, v: Vec3) -> Vec3 {
+        Vec3(self * v.0, self * v.1, self * v.2)
     }
 }
 
 impl Div<f32> for Vec3 {
     type Output = Vec3;
     fn div(self, f: f32) -> Vec3 {
-        self * (1.0 / f)
+        (1.0 / f) * self
     }
 }
