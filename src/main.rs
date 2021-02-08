@@ -1,42 +1,42 @@
 mod vec3;
 mod ray;
+mod objects;
 
-use std::io::{self, Write};
 use vec3::Vec3;
 use ray::Ray;
+use objects::{Hittable, HitRecord, HittableList, Sphere};
 
-fn ray_color(ray: &Ray) -> Vec3 {
-    if hit_sphere(Vec3(0.0, 0.0, -1.0), 0.5, &ray) {
-        return Vec3(1.0, 0.0, 0.0);
+fn ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
+    let mut rec = HitRecord::new();
+    if world.hit(&ray, 0.0001, f32::MAX, &mut rec) {
+        return 0.5 * (rec.normal + Vec3(1.0, 1.0, 1.0));
     }
     let unit_direction: Vec3 = ray.direction.unit_vector();
-    let t: f32 = 0.5 * (unit_direction.y() + 1.0);
+    let t = 0.5 * (unit_direction.y() + 1.0);
     (1.0-t)*Vec3(1.0, 1.0, 1.0) + t*Vec3(0.5, 0.7, 1.0)
-}
-
-fn hit_sphere(center: Vec3, radius: f32, ray: &Ray) -> bool {
-    let oc: Vec3 = ray.origin - center;
-    let a: f32 = ray.direction.dot(ray.direction);
-    let b: f32 = 2.0 * oc.dot(ray.direction);
-    let c: f32 = oc.dot(oc) - radius*radius;
-    let discriminant: f32 = b*b - 4.0*a*c;
-    discriminant > 0.0
 }
 
 
 fn main() {
-
     // Image
 
-    const aspect_ratio: f32 = 16.0 / 9.0;
-    const image_width: i32 = 400;
-    const image_height: i32 = (image_width as f32 / aspect_ratio) as i32;
+    const ASPECT_RATIO: f32 = 16.0 / 9.0;
+    const IMAGE_WIDTH: i32 = 400;
+    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
+
+    // World
+    let sphere_1 = Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5);
+    let sphere_2 = Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0);
+
+    let mut world = HittableList::new();
+    world.add(sphere_1);
+    world.add(sphere_2);
 
     // Camera
 
     let viewport_height: f32 = 2.0;
 
-    let viewport_width: f32 = aspect_ratio * viewport_height;
+    let viewport_width: f32 = ASPECT_RATIO * viewport_height;
     let focal_length: f32 = 1.0;
 
     let origin: Vec3 = Vec3(0.0, 0.0, 0.0);
@@ -46,14 +46,14 @@ fn main() {
 
     // render
 
-    println!("P3\n{} {}\n255", image_width, image_height);
-    for j in (0..image_height).rev() {
-        eprint!("\rPercent complete: {}%", ((image_height - j) * 100 / (image_height)));
-        for i in 0..image_width {
-            let u: f32 = i as f32 / (image_width-1) as f32;
-            let v: f32 = j as f32 / (image_height-1) as f32;
+    println!("P3\n{} {}\n255", IMAGE_WIDTH, IMAGE_HEIGHT);
+    for j in (0..IMAGE_HEIGHT).rev() {
+        eprint!("\rPercent complete: {}%", ((IMAGE_HEIGHT - j) * 100 / (IMAGE_HEIGHT)));
+        for i in 0..IMAGE_WIDTH {
+            let u: f32 = i as f32 / (IMAGE_WIDTH-1) as f32;
+            let v: f32 = j as f32 / (IMAGE_HEIGHT-1) as f32;
             let r: Ray = Ray::new(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-            let pixel_color: Vec3 = ray_color(&r);
+            let pixel_color: Vec3 = ray_color(&r, &world);
             pixel_color.write_color();
         }
     }
