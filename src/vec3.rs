@@ -1,5 +1,11 @@
 use std::ops::*;
 
+fn clamp(input: f32, min: f32, max: f32) -> f32 {
+    if input < min { return min; }
+    if input > max { return max; }
+    input
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3(pub f32, pub f32, pub f32);
 
@@ -29,12 +35,21 @@ impl Vec3 {
         *self / self.length()
     }
 
-    pub fn write_color(&self) {
+    pub fn write_color(&self, samples_per_pixel: i32) {
+        let mut r = self.0;
+        let mut g = self.1;
+        let mut b = self.2;
+
+        let scale = 1.0 / samples_per_pixel as f32;
+        r *= scale;
+        g *= scale;
+        b *= scale;
+
         println!(
             "{} {} {}", 
-            (255.999 * self.0) as i32,  
-            (255.999 * self.1) as i32, 
-            (255.999 * self.2) as i32
+            (256.0 * clamp(r, 0.0, 0.999)) as i32,  
+            (256.0 * clamp(g, 0.0, 0.999)) as i32, 
+            (256.0 * clamp(b, 0.0, 0.999)) as i32
         );
     }
 }

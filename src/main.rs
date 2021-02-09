@@ -1,10 +1,15 @@
 mod vec3;
 mod ray;
 mod objects;
+mod camera;
 
 use vec3::Vec3;
 use ray::Ray;
 use objects::{Hittable, HitRecord, HittableList, Sphere};
+use rand::Rng;
+use camera::Camera;
+
+
 
 fn ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
     let mut rec = HitRecord::new();
@@ -19,10 +24,11 @@ fn ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
 
 fn main() {
     // Image
-
     const ASPECT_RATIO: f32 = 16.0 / 9.0;
     const IMAGE_WIDTH: i32 = 400;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
+    let samples_per_pixel = 1000;
+    let mut rng = rand::thread_rng();
 
     // World
     let sphere_1 = Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5);
@@ -33,16 +39,8 @@ fn main() {
     world.add(sphere_2);
 
     // Camera
-
-    let viewport_height: f32 = 2.0;
-
-    let viewport_width: f32 = ASPECT_RATIO * viewport_height;
-    let focal_length: f32 = 1.0;
-
     let origin: Vec3 = Vec3(0.0, 0.0, 0.0);
-    let horizontal: Vec3 = Vec3(viewport_width, 0.0, 0.0);
-    let vertical: Vec3 = Vec3(0.0, viewport_height, 0.0);
-    let lower_left_corner: Vec3 = origin - horizontal/2.0 - vertical/2.0 - Vec3(0.0, 0.0, focal_length);
+    let cam = Camera::new(origin);
 
     // render
 
@@ -50,11 +48,14 @@ fn main() {
     for j in (0..IMAGE_HEIGHT).rev() {
         eprint!("\rPercent complete: {}%", ((IMAGE_HEIGHT - j) * 100 / (IMAGE_HEIGHT)));
         for i in 0..IMAGE_WIDTH {
-            let u: f32 = i as f32 / (IMAGE_WIDTH-1) as f32;
-            let v: f32 = j as f32 / (IMAGE_HEIGHT-1) as f32;
-            let r: Ray = Ray::new(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-            let pixel_color: Vec3 = ray_color(&r, &world);
-            pixel_color.write_color();
+            let mut pixel_color = Vec3(0.0, 0.0, 0.0);
+            for _ in 0..samples_per_pixel {
+                let u: f32 = (i as f32 + rng.gen::<f32>()) / (IMAGE_WIDTH-1) as f32;
+                let v: f32 = (j as f32 + rng.gen::<f32>()) / (IMAGE_HEIGHT-1) as f32;
+                let r: Ray = cam.get_ray(u, v);
+                pixel_color = ray_color(&r, &world) + pixel_color;
+            }
+            pixel_color.write_color(samples_per_pixel);
         }
     }
 }
